@@ -1,0 +1,30 @@
+---
+- hosts: all
+  gather_facts: False
+  vars_files:
+    - domains.yml
+  tasks:
+  - name: start local service nagios3
+    service:
+      name: nagios3
+      state: started
+    ignore_errors: true
+  - name: dell configs to conf.d/http/
+    file:
+      path: /etc/nagios3/conf.d/http/{{ item }}.cfg
+      state: absent
+    with_items: '{{ domains }}'
+  - name: reload nagios3
+    service:
+      name: nagios3
+      state: reloaded
+    notify:
+      - stop local service nagios3
+      - sync external nagios and reload
+  handlers:
+    - name: stop local service nagios3
+      service:
+        name: nagios3
+        state: stopped
+    - name: sync external nagios and reload
+      command: /etc/nagios3/sync.sh
